@@ -6,11 +6,12 @@ const helmet = require('helmet')
 
 const app = express()
 const POKEMON = require('./POKEMON.json')
+const { NODE_ENV } = require('./config');
 
 const validTypes = [`Bug`, `Dark`, `Dragon`, `Electric`, `Fairy`, `Fighting`, `Fire`, `Flying`, `Ghost`, `Grass`, `Ground`, `Ice`, `Normal`, `Poison`, `Psychic`, `Rock`, `Steel`, `Water`]
 
-
-app.use(morgan('dev'))
+const morganSetting = process.env.NODE_ENV === 'production' ? 'tiny' : 'common';
+app.use(morgan(morganSetting))
 app.use(helmet())
 app.use(cors())
 app.use(function validateBearerToken(req, res, next){
@@ -22,11 +23,15 @@ app.use(function validateBearerToken(req, res, next){
   }
   next()
 })
-
-
-
-
-
+app.use((error, req, res, next)=> {
+  let response
+  if (NODE_ENV === 'production'){
+    response = { error : { message: 'server error'}}
+  } else {
+    response = { error }
+  }
+  res.status(500).json(response)
+})
 
 app.get('/pokemon', function handleGetPokemon(req, res){
   let result = POKEMON.pokemon
@@ -55,6 +60,4 @@ app.get('/types', function handleGetTypes(req, res){
 }
 )
 
-
-const PORT = process.env.PORT || 8000
-app.listen(PORT, ()=> console.log(`Listening on port ${PORT}`))
+module.exports = app
